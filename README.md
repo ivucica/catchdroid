@@ -4,6 +4,9 @@ TheGrandExperiment
 This is an exercise in building Android native activities with GNU Make.
 And it's the smallest possible project I could come up with.
 
+Windows
+-------
+
 Expectations to build out of the box:
 
 * build with cygwin
@@ -27,4 +30,17 @@ set the `WITH_OUYA` variable properly.
 `android_native_app_glue.c/h` are coming from 
 `[android_ndk]/sources/android/native_app_glue`.
 
+There are references to build tools version 17.0.0. There are references
+to particular API revision. `PLATFORM` needs to be set to `windows`.
+There may be other assumptions.
 
+Linux
+-----
+Makefile now actually contains code to build under Linux, as long as:
+
+* JDK is in `/usr/bin/`
+* Android SDK is in `/root/android-sdk-linux`
+* standalone NDK compiler is in `/tmp/my-android-toolchain`
+
+Build tools are presumed to be 19.0.1. `PLATFORM` needs to be set to
+`linux`. There may be other assumptions.
