@@ -11,6 +11,10 @@
 #define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "native-activity", __VA_ARGS__))
 #define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, "native-activity", __VA_ARGS__))
 
+#if __OBJC__
+#include <Foundation/NSString.h>
+#endif
+
 /**
  * Our saved state data.
  */
@@ -235,6 +239,11 @@ void android_main(struct android_app* state) {
     }
 
     // loop waiting for stuff to do.
+
+    #if __OBJC__
+    NSString * aString = @"Hello NSString!";
+    LOGI([aString UTF8String]);
+    #endif
 
     while (1) {
         // Read all pending events.

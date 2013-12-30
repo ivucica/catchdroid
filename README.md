@@ -44,3 +44,25 @@ Makefile now actually contains code to build under Linux, as long as:
 
 Build tools are presumed to be 19.0.1. `PLATFORM` needs to be set to
 `linux`. There may be other assumptions.
+
+Objective-C test
+----------------
+This code is also used to test Objective-C, and hence is no longer
+as minimal as it could be.
+
+`TGENativeActivity`, a subclass of `android.app.NativeActivity` is used.
+This is done so we can load additional libraries in correct order, instead
+of just the native activity code. Previously `DummyClass`, an empty class, 
+was used to produce `classes.dex`, required by Android; now
+`TGENativeActivity` is good enough for that.
+
+Also, when `TEST_OBJC=true` is set in `Makefile`, .c files are compiled
+as if they are Objective-C files. Using `#if __OBJC__`, extra code is used
+to test Objective-C functionality.
+
+Finally, when `TEST_OBJC=true`, additional libraries are copied into the
+apk (libobjc2 runtime, gnustep-base).
+
+hasCode
+-------
+Instead of DummyClass, we could use `android:hasCode="false"`.

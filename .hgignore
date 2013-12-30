@@ -1,0 +1,11 @@
+syntax: glob
+patchelf/*
+apk/*
+*.dex
+gen/*
+*.so
+*.o
+*.d
+*.jks
+*.apk
+*.class

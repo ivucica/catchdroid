@@ -20,6 +20,8 @@ LDFLAGS=-shared -llog -landroid -lEGL -lGLESv1_CM
 
 ANDROID_REV=android-18
 
+TEST_OBJC=true
+
 ##############################
 
 PLATFORM=linux
@@ -42,6 +44,7 @@ PROJECT_PATH_WIN=`pwd`
 JARSIGNER="$(JAVA_BIN)"/jarsigner
 KEYTOOL="$(JAVA_BIN)"/keytool
 JAVAC="$(JAVA_BIN)"/javac
+
 endif
 ifeq ("$(PLATFORM)","windows")
 COMPILER_BIN=$(shell cygpath -u `cygpath -w android-sdk`)/../compiler/bin/
@@ -75,6 +78,40 @@ AAPT_PACK=$(AAPT) package -v -f -I $(ANDROID_JAR)
 
 CFLAGS += -I $(COMPILER_BIN)/../include
 
+#CP_SO=cp
+CP_SO=$(COMPILER_BIN)/arm-linux-androideabi-objcopy -S 
+
+ifeq ($(TEST_OBJC),true)
+CFLAGS += -x objective-c $(shell gnustep-config --objc-flags) # testing objc
+LDFLAGS += $(shell gnustep-config --base-libs)
+FOUNDATION_COPY = $(CP_SO) $(shell gnustep-config --variable=GNUSTEP_LOCAL_LIBRARIES)/libgnustep-base.so.1.*.* apk/lib/armeabi/libgnustep-base.so
+OBJC_COPY = $(CP_SO) $(shell gnustep-config --variable=GNUSTEP_LOCAL_LIBRARIES)/libobjc.so.*.* apk/lib/armeabi/libobjc.so
+#DEP_PATCHELF = patchelf/src/patchelf
+#BUILD_PATCHELF = cd patchelf && ./bootstrap.sh && ./configure && make
+#FOUNDATION_PATCHELF = ./patchelf/src/patchelf --remove-needed libobjc.so.4.6 apk/lib/armeabi/libgnustep-base.so
+#TGE_PATCHELF = ./patchelf/src/patchelf --remove-needed libobjc.so.4.6 apk/lib/armeabi/lib$(APKNAME).so
+DEP_PATCHELF = patchelf_dummy
+BUILD_PATCHELF = @echo Not building patchelf
+TGE_PATCHELF = 
+
+# instead of rpl to replace .4.6 with null, we should do this: 
+# http://www.opengis.ch/2011/11/23/creating-non-versioned-shared-libraries-for-android/
+RPL = rpl -R -e libobjc.so.4.6 "libobjc.so\x00\x00\x00\x00" apk/lib/armeabi/
+
+JAVA_CLASS = TGENativeActivity
+
+else
+FOUNDATION_COPY = 
+OBJC_COPY =
+DEP_PATCHELF = patchelf_dummy
+BUILD_PATCHELF = @echo Not building patchelf
+FOUNDATION_PATCHELF = 
+TGE_PATCHELF = 
+RPL =
+
+JAVA_CLASS = DummyClass
+endif
+
 all: $(APKNAME).apk
 
 install: $(APKNAME).apk
@@ -85,13 +122,25 @@ uninstall:
 lib$(APKNAME).so: TheGrandExperiment.o android_native_app_glue.o
 	$(CC) $(LDFLAGS) TheGrandExperiment.o android_native_app_glue.o -o lib$(APKNAME).so
 
-$(APKNAME).unsigned.apk: lib$(APKNAME).so classes.dex AndroidManifest.xml
+$(DEP_PATCHELF):
+	$(BUILD_PATCHELF)
+
+$(APKNAME).unsigned.apk: lib$(APKNAME).so classes.dex AndroidManifest.xml $(DEP_PATCHELF)
 	rm -rf apk/
 	rm -rf gen
 	mkdir apk/
 	mkdir gen/
 	mkdir -p apk/lib/armeabi/
-	cp lib$(APKNAME).so apk/lib/armeabi
+
+	$(CP_SO) lib$(APKNAME).so apk/lib/armeabi/lib$(APKNAME).so
+	$(FOUNDATION_COPY)
+	$(OBJC_COPY)
+
+	$(FOUNDATION_PATCHELF)
+	$(TGE_PATCHELF)
+
+	$(RPL)
+
 	cp classes.dex apk/
 ifdef WITH_OUYA
 	mkdir -p `dirname "$(WITH_OUYA)"`
@@ -106,12 +155,12 @@ $(APKNAME).apk: $(APKNAME).unsigned.apk $(KEYSTORE)
 $(KEYSTORE):
 	$(KEYTOOL) -genkey -v -keystore "$(KEYSTORE)" -alias "$(KEYNAME)" -keyalg RSA -keysize 2048 -validity 10000 -storepass "$(STOREPASS)" -keypass "$(KEYPASS)" -dname "$(DNAME)" -sigalg MD5withRSA
 
-classes.dex: classes/DummyClass.class
+classes.dex: classes/net/vucica/tv/ouya/sample/game/$(JAVA_CLASS).class
 	$(DX) --dex --output=$(PROJECT_PATH_WIN)/classes.dex --verbose $(PROJECT_PATH_WIN)/classes
 
-classes/DummyClass.class: DummyClass.java
-	mkdir -p classes/
-	$(JAVAC) -bootclasspath $(ANDROID_JAR) -d classes/ DummyClass.java -source 1.6 -target 1.6
+classes/net/vucica/tv/ouya/sample/game/$(JAVA_CLASS).class: $(JAVA_CLASS).java
+	mkdir -p classes/net/vucica/tv/ouya/sample/game/
+	$(JAVAC) -bootclasspath $(ANDROID_JAR) -d classes/ $(JAVA_CLASS).java -source 1.6 -target 1.6
 
 clean:
 	-rm *.o
@@ -128,3 +177,7 @@ distclean: clean
 run:
 	$(ADB) shell am start -n $(IDENTIFIER)/android.app.NativeActivity
 
+nginx: /usr/share/nginx/www/$(APKNAME).apk
+/usr/share/nginx/www/$(APKNAME).apk: $(APKNAME).apk
+	cp $(APKNAME).apk /usr/share/nginx/www/
+	
