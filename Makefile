@@ -42,6 +42,9 @@ endif
 ifeq ($(ANDROID_SDK),)
 ANDROID_SDK=$(HOME)/android-sdk-linux
 endif
+ifeq ($(ANDROID_NDK),)
+ANDROID_NDK=$(HOME)/android-ndk-r9d
+endif
 ANDROID_SDK_WIN=$(ANDROID_SDK)
 CC=$(COMPILER_BIN)clang
 CXX=$(COMPILER_BIN)clang++
@@ -133,7 +136,9 @@ RPL =
 JAVA_CLASS = DummyClass
 endif
 
-OBJS=src/catchdroid.o
+CFLAGS += -Ilibpng-android/jni
+
+OBJS=src/catchdroid.o src/Texture.o src/AssetManager.o
 
 all: $(APKNAME).apk
 
@@ -145,8 +150,8 @@ install: $(APKNAME).apk
 uninstall:
 	$(ADB) uninstall $(IDENTIFIER)
 
-lib$(APKNAME).so: $(OBJS) android_native_app_glue.o
-	$(CC) $(LDFLAGS) $(OBJS) android_native_app_glue.o -o lib$(APKNAME).so
+lib$(APKNAME).so: $(OBJS) android_native_app_glue.o libpng-android/obj/local/armeabi/libpng.a
+	$(CC) $(LDFLAGS) $(OBJS) android_native_app_glue.o libpng-android/obj/local/armeabi/libpng.a -o lib$(APKNAME).so
 
 $(APKNAME).unsigned.apk: lib$(APKNAME).so classes.dex AndroidManifest.xml
 	rm -rf apk/
@@ -182,6 +187,9 @@ classes/net/vucica/catchdroid/$(JAVA_CLASS).class: $(JAVA_CLASS).java
 	mkdir -p classes/net/vucica/catchdroid/
 	$(JAVAC) -bootclasspath $(ANDROID_JAR) -d classes/ $(JAVA_CLASS).java -source 1.6 -target 1.6
 
+libpng-android/obj/local/armeabi/libpng.a:
+	sh -c "export PATH=$(PATH):$(ANDROID_NDK) && cd libpng-android && ./build.sh"
+
 clean:
 	-rm *.o
 	-rm lib$(APKNAME).so
@@ -195,7 +203,7 @@ distclean: clean
 	-rm $(KEYSTORE)
 
 run:
-	$(ADB) shell am start -n $(IDENTIFIER)/android.app.NativeActivity
+	$(ADB) shell am start -n $(IDENTIFIER)/net.vucica.catchdroid.IVNativeActivity
 
 nginx: /usr/share/nginx/www/$(APKNAME).apk
 /usr/share/nginx/www/$(APKNAME).apk: $(APKNAME).apk

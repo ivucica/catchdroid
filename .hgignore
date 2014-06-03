@@ -9,3 +9,4 @@ gen/*
 *.jks
 *.apk
 *.class
+libpng-android/*

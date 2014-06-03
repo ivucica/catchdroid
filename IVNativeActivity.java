@@ -1,5 +1,6 @@
 package net.vucica.catchdroid;
 import android.app.NativeActivity;
+import android.content.res.AssetManager;
 
 public class IVNativeActivity extends NativeActivity
 {
@@ -17,4 +18,15 @@ public class IVNativeActivity extends NativeActivity
     System.loadLibrary("CatchDroid");
   }
 
+  public static native void initAssetManager(AssetManager assetManager);
+  public IVNativeActivity()
+  {
+    super();
+  }
+  public void onCreate(android.os.Bundle savedInstanceState)
+  {
+    super.onCreate(savedInstanceState);
+    android.content.Context context = this;
+    initAssetManager(context.getAssets());
+  } 
 }
