@@ -1,8 +1,10 @@
-TheGrandExperiment
-==================
+CatchDroid
+===========
 
-This is an exercise in building Android native activities with GNU Make.
-And it's the smallest possible project I could come up with.
+This is a small game for Android.
+
+It evolved from an exercise in building Android native activities with
+GNU Make.
 
 Windows
 -------

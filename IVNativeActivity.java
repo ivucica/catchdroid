@@ -1,7 +1,7 @@
-package net.vucica.tv.ouya.sample.game;
+package net.vucica.catchdroid;
 import android.app.NativeActivity;
 
-public class TGENativeActivity extends NativeActivity
+public class IVNativeActivity extends NativeActivity
 {
   static
   {
@@ -14,7 +14,7 @@ public class TGENativeActivity extends NativeActivity
     */
     System.loadLibrary("objc");
     System.loadLibrary("gnustep-base");
-    System.loadLibrary("TheGrandExperiment");
+    System.loadLibrary("CatchDroid");
   }
 
 }

@@ -5,8 +5,8 @@ STOREPASS=TheStorePassword
 KEYPASS=TheKeyPassword
 DNAME=CN=Hermann Digimon, OU=Software Building Department, O=Big Company ltd., L=Sometown, S=Somewhere, C=HR
 
-APKNAME=TheGrandExperiment
-IDENTIFIER=net.vucica.tv.ouya.sample.game
+APKNAME=CatchDroid
+IDENTIFIER=net.vucica.catchdroid
 
 #WITH_OUYA=apk/raw/key.der
 WITH_OUYA=
@@ -119,7 +119,7 @@ OBJC_COPY = $(CP_SO) $(shell $(GSCONFIG) --variable=GNUSTEP_LOCAL_LIBRARIES)/lib
 # http://www.opengis.ch/2011/11/23/creating-non-versioned-shared-libraries-for-android/
 RPL = rpl -R -e libobjc.so.4.6 "libobjc.so\x00\x00\x00\x00" apk/lib/armeabi/
 
-JAVA_CLASS = TGENativeActivity
+JAVA_CLASS = IVNativeActivity
 
 else
 FOUNDATION_COPY = 
@@ -129,6 +129,8 @@ RPL =
 JAVA_CLASS = DummyClass
 endif
 
+OBJS=src/catchdroid.o
+
 all: $(APKNAME).apk
 
 install: $(APKNAME).apk
@@ -136,8 +138,8 @@ install: $(APKNAME).apk
 uninstall:
 	$(ADB) uninstall $(IDENTIFIER)
 
-lib$(APKNAME).so: TheGrandExperiment.o android_native_app_glue.o
-	$(CC) $(LDFLAGS) TheGrandExperiment.o android_native_app_glue.o -o lib$(APKNAME).so
+lib$(APKNAME).so: $(OBJS) android_native_app_glue.o
+	$(CC) $(LDFLAGS) $(OBJS) android_native_app_glue.o -o lib$(APKNAME).so
 
 $(APKNAME).unsigned.apk: lib$(APKNAME).so classes.dex AndroidManifest.xml
 	rm -rf apk/
@@ -166,11 +168,11 @@ $(APKNAME).apk: $(APKNAME).unsigned.apk $(KEYSTORE)
 $(KEYSTORE):
 	$(KEYTOOL) -genkey -v -keystore "$(KEYSTORE)" -alias "$(KEYNAME)" -keyalg RSA -keysize 2048 -validity 10000 -storepass "$(STOREPASS)" -keypass "$(KEYPASS)" -dname "$(DNAME)" -sigalg MD5withRSA
 
-classes.dex: classes/net/vucica/tv/ouya/sample/game/$(JAVA_CLASS).class
+classes.dex: classes/net/vucica/catchdroid/$(JAVA_CLASS).class
 	$(DX) --dex --output=$(PROJECT_PATH_WIN)/classes.dex --verbose $(PROJECT_PATH_WIN)/classes
 
-classes/net/vucica/tv/ouya/sample/game/$(JAVA_CLASS).class: $(JAVA_CLASS).java
-	mkdir -p classes/net/vucica/tv/ouya/sample/game/
+classes/net/vucica/catchdroid/$(JAVA_CLASS).class: $(JAVA_CLASS).java
+	mkdir -p classes/net/vucica/catchdroid/
 	$(JAVAC) -bootclasspath $(ANDROID_JAR) -d classes/ $(JAVA_CLASS).java -source 1.6 -target 1.6
 
 clean:
