@@ -114,13 +114,6 @@ CFLAGS += -x objective-c $(shell $(GSCONFIG) --objc-flags) # testing objc
 LDFLAGS += $(shell $(GSCONFIG) --base-libs)
 FOUNDATION_COPY = $(CP_SO) $(shell $(GSCONFIG) --variable=GNUSTEP_LOCAL_LIBRARIES)/libgnustep-base.so.1.*.* apk/lib/armeabi/libgnustep-base.so
 OBJC_COPY = $(CP_SO) $(shell $(GSCONFIG) --variable=GNUSTEP_LOCAL_LIBRARIES)/libobjc.so.*.* apk/lib/armeabi/libobjc.so
-#DEP_PATCHELF = patchelf/src/patchelf
-#BUILD_PATCHELF = cd patchelf && ./bootstrap.sh && ./configure && make
-#FOUNDATION_PATCHELF = ./patchelf/src/patchelf --remove-needed libobjc.so.4.6 apk/lib/armeabi/libgnustep-base.so
-#TGE_PATCHELF = ./patchelf/src/patchelf --remove-needed libobjc.so.4.6 apk/lib/armeabi/lib$(APKNAME).so
-DEP_PATCHELF = patchelf_dummy
-BUILD_PATCHELF = @echo Not building patchelf
-TGE_PATCHELF = 
 
 # instead of rpl to replace .4.6 with null, we should do this: 
 # http://www.opengis.ch/2011/11/23/creating-non-versioned-shared-libraries-for-android/
@@ -131,10 +124,6 @@ JAVA_CLASS = TGENativeActivity
 else
 FOUNDATION_COPY = 
 OBJC_COPY =
-DEP_PATCHELF = patchelf_dummy
-BUILD_PATCHELF = @echo Not building patchelf
-FOUNDATION_PATCHELF = 
-TGE_PATCHELF = 
 RPL =
 
 JAVA_CLASS = DummyClass
@@ -150,10 +139,7 @@ uninstall:
 lib$(APKNAME).so: TheGrandExperiment.o android_native_app_glue.o
 	$(CC) $(LDFLAGS) TheGrandExperiment.o android_native_app_glue.o -o lib$(APKNAME).so
 
-$(DEP_PATCHELF):
-	$(BUILD_PATCHELF)
-
-$(APKNAME).unsigned.apk: lib$(APKNAME).so classes.dex AndroidManifest.xml $(DEP_PATCHELF)
+$(APKNAME).unsigned.apk: lib$(APKNAME).so classes.dex AndroidManifest.xml
 	rm -rf apk/
 	rm -rf gen
 	mkdir apk/
@@ -163,9 +149,6 @@ $(APKNAME).unsigned.apk: lib$(APKNAME).so classes.dex AndroidManifest.xml $(DEP_
 	$(CP_SO) lib$(APKNAME).so apk/lib/armeabi/lib$(APKNAME).so
 	$(FOUNDATION_COPY)
 	$(OBJC_COPY)
-
-	$(FOUNDATION_PATCHELF)
-	$(TGE_PATCHELF)
 
 	$(RPL)
 
