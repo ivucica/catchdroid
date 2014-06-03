@@ -121,6 +121,10 @@ RPL = rpl -R -e libobjc.so.4.6 "libobjc.so\x00\x00\x00\x00" apk/lib/armeabi/
 
 JAVA_CLASS = IVNativeActivity
 
+ifeq ($(OBJC),)
+OBJC=$(CC)
+endif
+
 else
 FOUNDATION_COPY = 
 OBJC_COPY =
@@ -132,6 +136,9 @@ endif
 OBJS=src/catchdroid.o
 
 all: $(APKNAME).apk
+
+%.o: %.m
+	$(OBJC) $(CFLAGS) $(OBJCFLAGS) $< -c -o $@
 
 install: $(APKNAME).apk
 	$(ADB) install $(INSTALLARGS) $(APKNAME).apk
