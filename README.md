@@ -30,20 +30,32 @@ set the `WITH_OUYA` variable properly.
 `android_native_app_glue.c/h` are coming from 
 `[android_ndk]/sources/android/native_app_glue`.
 
-There are references to build tools version 17.0.0. There are references
+There are references to build tools version 19.0.3. There are references
 to particular API revision. `PLATFORM` needs to be set to `windows`.
 There may be other assumptions.
+
+Update `BUILD_TOOLS_REV` to change build tools version. Update `JAVA_BIN`
+to set path to JDK's `bin/`.
 
 Linux
 -----
 Makefile now actually contains code to build under Linux, as long as:
 
 * JDK is in `/usr/bin/`
-* Android SDK is in `/root/android-sdk-linux`
+* Android SDK is in `${HOME}/android-sdk-linux`
 * standalone NDK compiler is in `/tmp/my-android-toolchain`
 
-Build tools are presumed to be 19.0.1. `PLATFORM` needs to be set to
+Build tools are presumed to be 19.0.3. `PLATFORM` needs to be set to
 `linux`. There may be other assumptions.
+
+The sections that can and should be overridden are marked.
+
+Without modifying, you can update `COMPILER_BIN`, `ANDROID_SDK`,
+and `JAVA_BIN` which are path to `bin/` of the standalone compiler,
+path to Android SDK, and path to JDK's `bin/`.
+
+Update `BUILD_TOOLS_REV` to change build tools version. Update `JAVA_BIN`
+to set path to JDK's `bin/`.
 
 Objective-C test
 ----------------
@@ -62,6 +74,15 @@ to test Objective-C functionality.
 
 Finally, when `TEST_OBJC=true`, additional libraries are copied into the
 apk (libobjc2 runtime, gnustep-base).
+
+Set `GSCONFIG` to full path to `gnustep-config` file in case the
+Android-specific `gnustep-config` is not in `PATH` or is not the first one
+appearing in `PATH`. For example:
+
+    GSCONFIG=~/gnustep-android/build/gs-install/bin/gnustep-config make
+
+You will need to install `rpl` package under Ubuntu, as we use it to
+tweak the binaries produced by the build process.
 
 hasCode
 -------

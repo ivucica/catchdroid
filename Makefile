@@ -1,3 +1,4 @@
+# UPDATE THESE:
 KEYSTORE=TheKeyStore.jks
 KEYNAME=TheReleaseKeyName
 STOREPASS=TheStorePassword
@@ -10,34 +11,47 @@ IDENTIFIER=net.vucica.tv.ouya.sample.game
 #WITH_OUYA=apk/raw/key.der
 WITH_OUYA=
 
+ANDROID_REV=android-19
+TEST_OBJC=true
+PLATFORM=linux
+BUILD_TOOLS_REV=19.0.3
+
+# Pick one:
 # regular install
 INSTALLARGS=-r
 # sdcard install
 #INSTALLARGS=-r -s
 
+# Don't touch these:
 #CFLAGS=-isystem .
 LDFLAGS=-shared -llog -landroid -lEGL -lGLESv1_CM
 
-ANDROID_REV=android-18
-
-TEST_OBJC=true
 
 ##############################
+# PER-PLATFORM SETTINGS
 
-PLATFORM=linux
 ifeq ("$(PLATFORM)","linux")
+#####
+#UPDATE THESE:
+ifeq ($(COMPILER_BIN),)
 COMPILER_BIN=/tmp/my-android-toolchain/bin/
-
+endif
+ifeq ($(JAVA_BIN),)
+JAVA_BIN=/usr/bin
+endif
+ifeq ($(ANDROID_SDK),)
+ANDROID_SDK=$(HOME)/android-sdk-linux
+endif
+ANDROID_SDK_WIN=$(ANDROID_SDK)
 CC=$(COMPILER_BIN)clang
 CXX=$(COMPILER_BIN)clang++
-JAVA_BIN=/usr/bin
 
-ANDROID_SDK=/root/android-sdk-linux
-ANDROID_SDK_WIN=${ANDROID_SDK}
-AAPT=$(ANDROID_SDK)/build-tools/19.0.1/aapt
+#####
+# No need to touch below:
+AAPT=$(ANDROID_SDK)/build-tools/$(BUILD_TOOLS_REV)/aapt
 ADB=$(ANDROID_SDK)/platform-tools/adb
 # -s emulator-5556
-DX=$(ANDROID_SDK)/build-tools/19.0.1/dx
+DX=$(ANDROID_SDK)/build-tools/$(BUILD_TOOLS_REV)/dx
 
 PROJECT_PATH_WIN=`pwd`
 
@@ -47,30 +61,40 @@ JAVAC="$(JAVA_BIN)"/javac
 
 endif
 ifeq ("$(PLATFORM)","windows")
+####
+#UPDATE THESE:
+ifeq ($(COMPILER_BIN),)
 COMPILER_BIN=$(shell cygpath -u `cygpath -w android-sdk`)/../compiler/bin/
-
+endif
+ifeq ($(JAVA_BIN),)
+JAVA_BIN=/cygdrive/c/Program Files (x86)/Java/jdk1.7.0_25/bin
+endif
 CC=$(COMPILER_BIN)arm-linux-androideabi-gcc
 CXX=$(COMPILER_BIN)arm-linux-androideabi-g++
-JAVA_BIN=/cygdrive/c/Program Files (x86)/Java/jdk1.7.0_25/bin
-
-#ANDROID_SDK_PATH=Path/To/AndroidSDK/On/F/Drive
-#ANDROID_SDK=/cygdrive/f/$(ANDROID_SDK_PATH)
-#ANDROID_SDK_WIN=F:/$(ANDROID_SDK_PATH)
 ANDROID_SDK=$(shell cygpath -u `cygpath -w android-sdk`) # android-sdk is a symlink
 ANDROID_SDK_WIN=$(shell cygpath -w android-sdk | sed 's_\\_/_g')
 
+# Examples in case we don't use a symlink:
+#ANDROID_SDK_PATH=Path/To/AndroidSDK/On/F/Drive
+#ANDROID_SDK=/cygdrive/f/$(ANDROID_SDK_PATH)
+#ANDROID_SDK_WIN=F:/$(ANDROID_SDK_PATH)
+
+####
+# No need to touch below:
 PROJECT_PATH_WIN=$(shell cygpath -w `pwd` | sed 's_\\_/_g')
 
-AAPT=$(ANDROID_SDK)/build-tools/17.0.0/aapt.exe
+AAPT=$(ANDROID_SDK)/build-tools/$(BUILD_TOOLS_REV)/aapt.exe
 ADB=$(ANDROID_SDK)/platform-tools/adb.exe
 # -s emulator-5556
-DX=$(ANDROID_SDK)/build-tools/17.0.0/dx.bat
+DX=$(ANDROID_SDK)/build-tools/$(BUILD_TOOLS_REV)/dx.bat
 
 JARSIGNER="$(JAVA_BIN)"/jarsigner.exe
 KEYTOOL="$(JAVA_BIN)"/keytool.exe
 JAVAC="$(JAVA_BIN)"/javac.exe
 endif
 
+####
+# No need to touch these:
 ANDROID_JAR=$(ANDROID_SDK_WIN)/platforms/$(ANDROID_REV)/android.jar
 AAPT_PACK=$(AAPT) package -v -f -I $(ANDROID_JAR)
 
@@ -82,10 +106,14 @@ CFLAGS += -I $(COMPILER_BIN)/../include
 CP_SO=$(COMPILER_BIN)/arm-linux-androideabi-objcopy -S 
 
 ifeq ($(TEST_OBJC),true)
-CFLAGS += -x objective-c $(shell gnustep-config --objc-flags) # testing objc
-LDFLAGS += $(shell gnustep-config --base-libs)
-FOUNDATION_COPY = $(CP_SO) $(shell gnustep-config --variable=GNUSTEP_LOCAL_LIBRARIES)/libgnustep-base.so.1.*.* apk/lib/armeabi/libgnustep-base.so
-OBJC_COPY = $(CP_SO) $(shell gnustep-config --variable=GNUSTEP_LOCAL_LIBRARIES)/libobjc.so.*.* apk/lib/armeabi/libobjc.so
+ifeq ($(GSCONFIG),)
+GSCONFIG = gnustep-config
+endif
+
+CFLAGS += -x objective-c $(shell $(GSCONFIG) --objc-flags) # testing objc
+LDFLAGS += $(shell $(GSCONFIG) --base-libs)
+FOUNDATION_COPY = $(CP_SO) $(shell $(GSCONFIG) --variable=GNUSTEP_LOCAL_LIBRARIES)/libgnustep-base.so.1.*.* apk/lib/armeabi/libgnustep-base.so
+OBJC_COPY = $(CP_SO) $(shell $(GSCONFIG) --variable=GNUSTEP_LOCAL_LIBRARIES)/libobjc.so.*.* apk/lib/armeabi/libobjc.so
 #DEP_PATCHELF = patchelf/src/patchelf
 #BUILD_PATCHELF = cd patchelf && ./bootstrap.sh && ./configure && make
 #FOUNDATION_PATCHELF = ./patchelf/src/patchelf --remove-needed libobjc.so.4.6 apk/lib/armeabi/libgnustep-base.so
