@@ -3,6 +3,8 @@
 
 #import "Texture.h"
 
+#define CRASH exit(1);
+
 typedef struct {
     const int width;
     const int height;
@@ -45,7 +47,7 @@ static GLenum get_gl_color_format(const int png_color_format);
 
 RawImageData get_raw_image_data_from_png(const void* png_data, const int png_data_size) {
     assert(png_data != NULL && png_data_size > 8);
-    assert(png_check_sig((void*)png_data, 8));
+    //assert(png_check_sig((void*)png_data, 8)); // not in libpng-android we're using
  
     png_structp png_ptr = png_create_read_struct(
         PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
@@ -113,9 +115,10 @@ static PngInfo read_and_update_info(const png_structp png_ptr, const png_infop i
     // Ensure 8-bit packing
     if (bit_depth < 8)
        png_set_packing(png_ptr);
+/* // not present in our copy of libpng
     else if (bit_depth == 16)
         png_set_scale_16(png_ptr);
- 
+ */
     png_read_update_info(png_ptr, info_ptr);
  
     // Read the new color type after updates have been made.
