@@ -138,7 +138,7 @@ endif
 
 CFLAGS += -Ilibpng-android/jni
 
-OBJS=src/catchdroid.o src/Texture.o src/AssetManager.o
+OBJS=src/catchdroid.o src/Texture.o src/Asset.o
 
 all: $(APKNAME).apk
 

@@ -13,6 +13,8 @@
 
 #include <Foundation/NSObject.h>
 
+#import "Texture.h"
+
 /**
  * Our saved state data.
  */
@@ -41,6 +43,9 @@ struct saved_state {
     int32_t width;
     int32_t height;
     struct saved_state state;
+
+    @private
+    Texture * logo;
 }
 -(int)setupDisplay;
 @end
@@ -112,6 +117,9 @@ struct saved_state {
     glShadeModel(GL_SMOOTH);
     glDisable(GL_DEPTH_TEST);
 
+    logo = [Texture textureWithPath: @"logo.png"];
+    [logo retain];
+
     return 0;
 }
 
@@ -126,9 +134,51 @@ struct saved_state {
     }
 
     // Just fill the screen with a color.
-    glClearColor(((float)self->state.x)/self->width, self->state.angle,
-            ((float)self->state.y)/self->height, 1);
+    glClearColor(
+        ((float)self->state.x)/self->width,
+        self->state.angle,
+        ((float)self->state.y)/self->height,
+        1);
     glClear(GL_COLOR_BUFFER_BIT);
+
+    ////////////////////////
+
+    glEnable(GL_TEXTURE_2D);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+    glBindTexture(GL_TEXTURE_2D, [logo textureId]);
+    GLfloat vertices[] = {
+      0, 0, 0,
+      1, 0, 0,
+      1, 1, 0,
+
+      1, 1, 0,
+      0, 1, 0,
+      0, 0, 0
+    };
+    GLfloat textures[] = {
+      0, 1,
+      1, 1,
+      1, 0,
+
+      1, 0,
+      0, 0,
+      0, 1
+    };
+    glVertexPointer(3, GL_FLOAT, 0, vertices);
+    glTexCoordPointer(2, GL_FLOAT, 0, textures);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+
+    //glDrawTexiOES(w/2, h/2, 0, w, h);
+    //glDrawTexiOES(0, 0, 0, w, h);
+
+    glDisable(GL_TEXTURE_2D);
+
+    //////////////////
 
     eglSwapBuffers(self->display, self->surface);
 }
@@ -138,6 +188,10 @@ struct saved_state {
  */
 -(void)terminateDisplay
 {
+    LOGI("Terminating display");
+    [logo release];
+    logo = nil;
+
     if (self->display != EGL_NO_DISPLAY) {
         eglMakeCurrent(self->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
         if (self->context != EGL_NO_CONTEXT) {
@@ -152,6 +206,11 @@ struct saved_state {
     self->display = EGL_NO_DISPLAY;
     self->context = EGL_NO_CONTEXT;
     self->surface = EGL_NO_SURFACE;
+}
+- (void) dealloc
+{
+   [self terminateDisplay];
+   [super dealloc];
 }
 @end
 
@@ -176,12 +235,14 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
     Engine * engine = (Engine *)app->userData;
     switch (cmd) {
         case APP_CMD_SAVE_STATE:
+            LOGI("Saving state");
             // The system has asked us to save our current state.  Do so.
             engine->app->savedState = malloc(sizeof(struct saved_state));
             *((struct saved_state*)engine->app->savedState) = engine->state;
             engine->app->savedStateSize = sizeof(struct saved_state);
             break;
         case APP_CMD_INIT_WINDOW:
+            LOGI("Initing window");
             // The window is being shown, get it ready.
             if (engine->app->window != NULL) {
                 [engine setupDisplay];
@@ -189,10 +250,12 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
             }
             break;
         case APP_CMD_TERM_WINDOW:
+            LOGI("Terminating window");
             // The window is being hidden or closed, clean it up.
             [engine terminateDisplay];
             break;
         case APP_CMD_GAINED_FOCUS:
+            LOGI("Gaining focus");
             // When our app gains focus, we start monitoring the accelerometer.
             if (engine->accelerometerSensor != NULL) {
                 ASensorEventQueue_enableSensor(engine->sensorEventQueue,
@@ -203,6 +266,7 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
             }
             break;
         case APP_CMD_LOST_FOCUS:
+            LOGI("Losing focus");
             // When our app loses focus, we stop monitoring the accelerometer.
             // This is to avoid consuming battery while not being used.
             if (engine->accelerometerSensor != NULL) {
@@ -225,6 +289,7 @@ void android_main(struct android_app* app) {
     // Make sure glue isn't stripped.
     app_dummy();
 
+    LOGI("Preparing display");
     Engine * engine = [Engine new];
     app->userData = engine;
     app->onAppCmd = engine_handle_cmd;
@@ -232,6 +297,7 @@ void android_main(struct android_app* app) {
     engine->app = app;
 
     // Prepare to monitor accelerometer
+    LOGI("Initializing sensors");
     engine->sensorManager = ASensorManager_getInstance();
     engine->accelerometerSensor = ASensorManager_getDefaultSensor(engine->sensorManager,
             ASENSOR_TYPE_ACCELEROMETER);
@@ -244,6 +310,7 @@ void android_main(struct android_app* app) {
     }
 
     // loop waiting for stuff to do.
+    LOGI("Looping");
 
     while (1) {
         // Read all pending events.
@@ -268,9 +335,9 @@ void android_main(struct android_app* app) {
                     ASensorEvent event;
                     while (ASensorEventQueue_getEvents(engine->sensorEventQueue,
                             &event, 1) > 0) {
-                        LOGI("accelerometer: x=%f y=%f z=%f",
-                                event.acceleration.x, event.acceleration.y,
-                                event.acceleration.z);
+                        //LOGI("accelerometer: x=%f y=%f z=%f",
+                        //        event.acceleration.x, event.acceleration.y,
+                        //        event.acceleration.z);
                     }
                 }
             }

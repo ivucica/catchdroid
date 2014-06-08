@@ -1,9 +1,12 @@
 // PNG reading from:
 // http://www.learnopengles.com/loading-a-png-into-memory-and-displaying-it-as-a-texture-with-opengl-es-2-using-almost-the-same-code-on-ios-android-and-emscripten/
 
+#include <android/log.h>
 #import "Texture.h"
-
+#import "Asset.h"
 #define CRASH exit(1);
+#define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "native-activity", __VA_ARGS__))
+#define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, "native-activity", __VA_ARGS__))
 
 typedef struct {
     const int width;
@@ -57,7 +60,7 @@ RawImageData get_raw_image_data_from_png(const void* png_data, const int png_dat
  
     ReadDataHandle png_data_handle = (ReadDataHandle) {{png_data, png_data_size}, 0};
     png_set_read_fn(png_ptr, &png_data_handle, read_png_data_callback);
- 
+
     if (setjmp(png_jmpbuf(png_ptr))) {
         CRASH("Error reading PNG file!");
     }
@@ -175,7 +178,77 @@ void release_raw_image_data(const RawImageData* data) {
 
 
 @implementation Texture
+@synthesize asset=_asset;
+@synthesize path=_path;
+@synthesize textureId=_id;
++ (Texture *) textureWithPath: (NSString *)path
+{
+  return [[[self alloc] initWithPath: path] autorelease];
+}
+- (id) initWithPath: (NSString *)path
+{
+  self = [super init];
+  if(!self)
+    return nil;
 
+  if(!path)
+  {
+    [self release];
+    return nil;
+  }
 
+  LOGI("Loading %s", [path UTF8String]);
+  [self setPath: path];
 
+  Asset * asset = [Asset assetWithPath: path];
+  if(!asset)
+  {
+    [self release];
+    return nil;
+  }
+
+  if(![asset buffer] || ![asset length])
+  {
+    LOGI("Asset buffer %p, length %d", [asset buffer], [asset length]);
+    [self release];
+    return nil;
+  }
+
+  [self setAsset: asset];
+ 
+  const RawImageData raw_image_data = 
+      get_raw_image_data_from_png([asset buffer], [asset length]);
+  [self loadTextureFromRawData: raw_image_data];
+ 
+  release_raw_image_data(&raw_image_data);
+ 
+  return self;
+}
+
+- (void) loadTextureFromRawData: (RawImageData)rawData
+{
+  GLuint texture_object_id;
+  glGenTextures(1, &texture_object_id);
+  assert(texture_object_id != 0);
+ 
+  glBindTexture(GL_TEXTURE_2D, texture_object_id);
+ 
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexImage2D(
+      GL_TEXTURE_2D, 0, rawData.gl_color_format, rawData.width, rawData.height, 0, rawData.gl_color_format, GL_UNSIGNED_BYTE, rawData.data);
+
+  //glGenerateMipmap(GL_TEXTURE_2D); // only gles2.0
+ 
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+  _id = texture_object_id;
+}
+- (void) dealloc
+{
+  glDeleteTextures(1, &_id);
+  [_asset release];
+  [_path release];
+  [super dealloc];
+}
 @end
