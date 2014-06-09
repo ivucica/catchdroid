@@ -14,6 +14,7 @@
 #include <Foundation/NSObject.h>
 
 #import "Texture.h"
+#import "Page.h"
 
 /**
  * Our saved state data.
@@ -46,6 +47,7 @@ struct saved_state {
 
     @private
     Texture * logo;
+    Page * page;
 }
 -(int)setupDisplay;
 @end
@@ -117,6 +119,8 @@ struct saved_state {
     glShadeModel(GL_SMOOTH);
     glDisable(GL_DEPTH_TEST);
 
+    page = [[Page alloc] initWithPageX: 16 pageY: 16];
+
     logo = [Texture textureWithPath: @"logo.png"];
     [logo retain];
 
@@ -140,6 +144,12 @@ struct saved_state {
         ((float)self->state.y)/self->height,
         1);
     glClear(GL_COLOR_BUFFER_BIT);
+
+    ////////////////////////
+
+    glPushMatrix();
+    [page draw];
+    glPopMatrix();
 
     ////////////////////////
 
@@ -168,7 +178,7 @@ struct saved_state {
     };
     glVertexPointer(3, GL_FLOAT, 0, vertices);
     glTexCoordPointer(2, GL_FLOAT, 0, textures);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    //glDrawArrays(GL_TRIANGLES, 0, 6);
 
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -189,6 +199,8 @@ struct saved_state {
 -(void)terminateDisplay
 {
     LOGI("Terminating display");
+    [page release];
+    page = nil;
     [logo release];
     logo = nil;
 

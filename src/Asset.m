@@ -71,5 +71,12 @@ JNIEXPORT void JNICALL Java_net_vucica_catchdroid_IVNativeActivity_initAssetMana
     AAsset_close(_asset);
   [super dealloc];
 }
+
+- (NSString *) string
+{
+  return [[[NSString alloc] initWithBytes: [self buffer]
+                                   length: [self length]
+                                 encoding: NSUTF8StringEncoding] autorelease];
+}
 @end
 

@@ -12,5 +12,6 @@ struct AAsset;
 @property (readonly, assign) size_t length;
 + (Asset *) assetWithPath: (NSString*)path;
 - (id) initWithPath: (NSString*)relativePath;
+- (NSString *) string;
 @end
 
