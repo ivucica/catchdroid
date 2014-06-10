@@ -114,10 +114,18 @@ struct saved_state {
     self->state.angle = 0;
 
     // Initialize GL state.
-    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
     glEnable(GL_CULL_FACE);
     glShadeModel(GL_SMOOTH);
     glDisable(GL_DEPTH_TEST);
+
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    if(w > h)
+      glOrthof(0, 1, 0, ((float)h)/w, -1, 1);
+    else
+      glOrthof(0, ((float)w)/h, 0, 1, -1, 1);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
 
     page = [[Page alloc] initWithPageX: 16 pageY: 16];
 
@@ -147,6 +155,7 @@ struct saved_state {
 
     ////////////////////////
 
+    glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
     [page draw];
     glPopMatrix();

@@ -9,8 +9,8 @@
   Texture * _tileset;
   int _pageX, _pageY;
 
-  int _tiles[16*16];
-  GLfloat _textureCoordinates[2 * 6 * 16 * 16];
+  int _tiles[PAGE_WIDTH*PAGE_HEIGHT];
+  GLfloat _textureCoordinates[2 * 6 * PAGE_WIDTH * PAGE_HEIGHT];
 }
 @property (nonatomic, retain) Texture * tileset;
 - (id) initWithPageX: (int)pageX 

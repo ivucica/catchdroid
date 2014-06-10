@@ -105,15 +105,18 @@ static GLfloat gridVertices[(2) * // x,y
       0, 0,
       0, 1
     };
-      LOGI("at %i (%d,%d): %d", x, y, _tiles[i]);
     for(int k = 0; k < 6; k++)
     {
-      _textureCoordinates[(2 * 6 * PAGE_WIDTH * y) +
-                          (2 * 6 * x) + 
-                          (2 * k + 0)] = (_tiles[i] % (TILESET_WIDTH) + textures[2*k + 0]) / ((GLfloat)TILESET_WIDTH); // 8 tiles per row in 128x128 tileset png
-      _textureCoordinates[(2 * 6 * PAGE_WIDTH * y) +
-                          (2 * 6 * x) + 
-                          (2 * k + 1)] = (_tiles[i] / (TILESET_HEIGHT) + textures[2*k + 1]) / ((GLfloat)TILESET_HEIGHT); 
+      int a = (2 * 6 * PAGE_WIDTH * y) +
+              (2 * 6 * x) + 
+              (2 * k + 0);
+      int b = (2 * 6 * PAGE_WIDTH * y) +
+              (2 * 6 * x) + 
+              (2 * k + 1);
+      _textureCoordinates[a] = (_tiles[i] % (TILESET_WIDTH) + textures[2*k + 0]) / ((GLfloat)TILESET_WIDTH);
+      _textureCoordinates[b] = (_tiles[i] / (TILESET_WIDTH) + textures[2*k + 1]) / ((GLfloat)TILESET_HEIGHT); 
+
+      LOGI("%d,%d - vertex %d: into %d,%d go %g,%g", x, y, k, a, b, _textureCoordinates[a], _textureCoordinates[b]);
     }
 
     i++;
@@ -131,7 +134,7 @@ static GLfloat gridVertices[(2) * // x,y
     glBindTexture(GL_TEXTURE_2D, [_tileset textureId]);
     glVertexPointer(2, GL_FLOAT, 0, gridVertices);
     glTexCoordPointer(2, GL_FLOAT, 0, _textureCoordinates);
-    glDrawArrays(GL_TRIANGLES, 0, 6 * (16 * 16));
+    glDrawArrays(GL_TRIANGLES, 0, 6 * (PAGE_WIDTH * PAGE_HEIGHT));
     
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
