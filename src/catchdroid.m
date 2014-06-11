@@ -47,7 +47,7 @@ struct saved_state {
     struct saved_state state;
 
     @private
-    Texture * logo;
+    Texture * _controls;
     Page * page;
     Character * ch;
     double _previousFrameTime;
@@ -136,10 +136,12 @@ struct saved_state {
 
     page = [[Page alloc] initWithPageX: 16 pageY: 16];
 
-    logo = [Texture textureWithPath: @"logo.png"];
-    [logo retain];
+    _controls = [Texture textureWithPath: @"controls.png"];
+    [_controls retain];
 
     ch = [[Character alloc] initWithTexturePath: @"player.png"];
+
+    //[self showToast: @"Tap to begin"];
 
     return 0;
 }
@@ -155,11 +157,15 @@ struct saved_state {
     }
 
     // Just fill the screen with a color.
+#if 0
     glClearColor(
         ((float)self->state.x)/self->width,
         self->state.angle,
         ((float)self->state.y)/self->height,
         1);
+#else
+    glClearColor(0,0,0,1);
+#endif
     glClear(GL_COLOR_BUFFER_BIT);
 
     ////////////////////////
@@ -177,19 +183,22 @@ struct saved_state {
 
     ////////////////////////
 
+    glPushMatrix();    
+    glScalef(4.9, 9.7, 1);
+    glTranslatef(-0.01, 0, 0);
     glEnable(GL_TEXTURE_2D);
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
-    glBindTexture(GL_TEXTURE_2D, [logo textureId]);
+    glBindTexture(GL_TEXTURE_2D, [_controls textureId]);
     GLfloat vertices[] = {
-      0, 0, 0,
-      1, 0, 0,
-      1, 1, 0,
+      -0.5, -0.5,
+       0.5, -0.5,
+       0.5, 0.5,
 
-      1, 1, 0,
-      0, 1, 0,
-      0, 0, 0
+       0.5, 0.5,
+      -0.5, 0.5,
+      -0.5, -0.5,
     };
     GLfloat textures[] = {
       0, 1,
@@ -200,18 +209,15 @@ struct saved_state {
       0, 0,
       0, 1
     };
-    glVertexPointer(3, GL_FLOAT, 0, vertices);
+    glVertexPointer(2, GL_FLOAT, 0, vertices);
     glTexCoordPointer(2, GL_FLOAT, 0, textures);
-    //glDrawArrays(GL_TRIANGLES, 0, 6);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
 
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 
-    //glDrawTexiOES(w/2, h/2, 0, w, h);
-    //glDrawTexiOES(0, 0, 0, w, h);
-
     glDisable(GL_TEXTURE_2D);
-
+    glPopMatrix();
     //////////////////
 
     eglSwapBuffers(self->display, self->surface);
@@ -251,8 +257,8 @@ struct saved_state {
     LOGI("Terminating display");
     [page release];
     page = nil;
-    [logo release];
-    logo = nil;
+    [_controls release];
+    _controls = nil;
     [ch release];
     ch = nil;
 
@@ -276,20 +282,122 @@ struct saved_state {
    [self terminateDisplay];
    [super dealloc];
 }
-@end
+- (int32_t) handleInput: (AInputEvent *) event
+{
+   if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_MOTION) {
+        self->animating = 1;
+        self->state.x = AMotionEvent_getX(event, 0);
+        self->state.y = AMotionEvent_getY(event, 0);
+        int action = AMotionEvent_getAction(event) & AMOTION_EVENT_ACTION_MASK;
+        
+        static const int MAXIMUM_TOUCHES = 2;
+        switch(action)
+        {
+          case AMOTION_EVENT_ACTION_POINTER_UP: 
+          case AMOTION_EVENT_ACTION_UP: 
+          case AMOTION_EVENT_ACTION_MOVE: 
+          { 
+            int index = (action & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) 
+              >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT; 
+            int pid = AMotionEvent_getPointerId(event, index); 
+            if (pid > MAXIMUM_TOUCHES) 
+              break; 
+            float x = AMotionEvent_getX(event, index); 
+            float y = AMotionEvent_getY(event, index); 
 
+            float pressure = AMotionEvent_getPressure(event, index); 
+
+
+            if(y < 0.10)
+              LOGI("LEFT");
+            else
+
+            LOGI("Engine %g %g action %d", x / (float)width, y / (float)height, action);
+            break;
+          }
+          default:
+          LOGI("New action");
+        }
+        return 1;
+    }
+    return 0;
+}
+- (void)showToast:(NSString*)text
+{
+  if (!text || ![text length])
+  {
+    LOGW("Empty string passed to showToast");
+    return;
+  }
+  JNIEnv* env = self->app->activity->env;
+  JavaVM * vm = self->app->activity->vm;
+  jint rtn = (*vm)->AttachCurrentThread(vm, &env, NULL);
+  jobject context = self->app->activity->clazz; // clazz is actually an instance of the java Activity class
+  jstring txt = (*env)->NewStringUTF(env, [text UTF8String]);
+
+  if(!context)
+  {
+    LOGW("Context is nil in showToast");
+    (*vm)->DetachCurrentThread(vm);
+    return;
+  }
+  if(!txt)
+  {
+    LOGW("Txt is nil in showToast");
+    (*vm)->DetachCurrentThread(vm);
+  }
+
+  // adapted from:
+  // https://github.com/chisun-joung/NDK/blob/master/workspace/JNIToast/jni/com_example_jnitoast_MainActivity.c
+  jclass Toast = NULL;
+  jobject toast = NULL;
+  jmethodID makeText = NULL;
+  jmethodID show = NULL;
+
+  Toast = (*env)->FindClass(env, "android/widget/Toast");
+  if(NULL == Toast)
+  {
+    LOGW("showToast: FindClass failed");
+    (*vm)->DetachCurrentThread(vm);
+    return;
+  }
+
+  makeText = (*env)->GetStaticMethodID(env, Toast,"makeText", "(Landroid/content/Context;Ljava/lang/CharSequence;I)Landroid/widget/Toast;");
+  if( NULL == makeText )
+  {
+    LOGW("showToast: FindStaticMethod failed");
+    (*vm)->DetachCurrentThread(vm);
+    return;
+  }
+
+  toast = (*env)->CallStaticObjectMethod(env, Toast, makeText, context, txt, /*time*/0);
+  if( NULL == toast )
+  {
+    LOGW("showToast: callstaticobjectmethod failed");
+    (*vm)->DetachCurrentThread(vm);
+    return;
+  }
+
+  show = (*env)->GetMethodID(env,Toast,"show","()V");
+  if ( NULL == show )
+  {
+    LOGI("showToast: GetMethodID Failed");
+    (*vm)->DetachCurrentThread(vm);
+    return;
+  }
+
+  (*env)->CallVoidMethod(env,toast,show);
+
+  (*vm)->DetachCurrentThread(vm);
+
+}
+@end
 /**
  * Process the next input event.
  */
 static int32_t engine_handle_input(struct android_app* app, AInputEvent* event) {
     Engine * engine = (Engine *)app->userData;
-    if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_MOTION) {
-        engine->animating = 1;
-        engine->state.x = AMotionEvent_getX(event, 0);
-        engine->state.y = AMotionEvent_getY(event, 0);
-        return 1;
-    }
-    return 0;
+    return [engine handleInput: event];
 }
 
 /**

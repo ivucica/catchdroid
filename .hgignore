@@ -12,3 +12,4 @@ gen/*
 libpng-android/*
 assets_src/*
 INSTALL.sh
+*.swp
