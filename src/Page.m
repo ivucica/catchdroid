@@ -27,23 +27,23 @@ static GLfloat gridVertices[(2) * // x,y
     for(int i = 0; i < PAGE_WIDTH; i++)
     {
       static const GLfloat vertices[] = {
-        0, 0,
-        1, 0,
-        1, 1,
+        -0.5, -0.5,
+         0.5, -0.5,
+         0.5, 0.5,
 
-        1, 1,
-        0, 1,
-        0, 0
+         0.5, 0.5,
+        -0.5, 0.5,
+        -0.5, -0.5,
       };
 
       for(int k = 0; k < 6; k++)
       {
         gridVertices[2 * 6 * PAGE_WIDTH * j +
                      2 * 6 * i +
-                     2 * k + 0] = (i + vertices[2 * k + 0]) / ((GLfloat)PAGE_WIDTH);
+                     2 * k + 0] = (i + vertices[2 * k + 0]);
         gridVertices[2 * 6 * PAGE_WIDTH * j +
                      2 * 6 * i +
-                     2 * k + 1] = (j + vertices[2 * k + 1]) / ((GLfloat)PAGE_HEIGHT);
+                     2 * k + 1] = (j + vertices[2 * k + 1]);
       }
     }
   }
@@ -135,6 +135,7 @@ static GLfloat gridVertices[(2) * // x,y
     glVertexPointer(2, GL_FLOAT, 0, gridVertices);
     glTexCoordPointer(2, GL_FLOAT, 0, _textureCoordinates);
     glDrawArrays(GL_TRIANGLES, 0, 6 * (PAGE_WIDTH * PAGE_HEIGHT));
+    glBindTexture(GL_TEXTURE_2D, 0);
     
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);

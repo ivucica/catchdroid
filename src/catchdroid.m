@@ -15,6 +15,7 @@
 
 #import "Texture.h"
 #import "Page.h"
+#import "Character.h"
 
 /**
  * Our saved state data.
@@ -48,8 +49,13 @@ struct saved_state {
     @private
     Texture * logo;
     Page * page;
+    Character * ch;
+    double _previousFrameTime;
 }
 -(int)setupDisplay;
+-(void)terminateDisplay;
+-(void)drawFrame;
+-(void)update;
 @end
 
 @implementation Engine
@@ -121,9 +127,10 @@ struct saved_state {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     if(w > h)
-      glOrthof(0, 1, 0, ((float)h)/w, -1, 1);
+      glOrthof(0, 8, 0, ((float)h)/w * 8, -1, 1);
     else
-      glOrthof(0, ((float)w)/h, 0, 1, -1, 1);
+      glOrthof(0, ((float)w)/h * 8, 0, 8, -1, 1);
+    glTranslatef(8/2 - 1 - 0.5, 8/2 - 0.5, 0);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
@@ -131,6 +138,8 @@ struct saved_state {
 
     logo = [Texture textureWithPath: @"logo.png"];
     [logo retain];
+
+    ch = [[Character alloc] initWithTexturePath: @"player.png"];
 
     return 0;
 }
@@ -157,7 +166,13 @@ struct saved_state {
 
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
+    [ch translateWithMultiplier: -1];
     [page draw];
+    glPopMatrix();
+    glPushMatrix();
+    // for player character, not doing translation
+    // others would have: [ch translateWithMultiplier: 1];
+    [ch draw];
     glPopMatrix();
 
     ////////////////////////
@@ -202,6 +217,32 @@ struct saved_state {
     eglSwapBuffers(self->display, self->surface);
 }
 
+- (void) update
+{
+  struct timeval currentTimeVal;
+  gettimeofday(&currentTimeVal, NULL);
+  
+  double currentTime = 0;
+  currentTime = currentTimeVal.tv_sec + ((double)currentTimeVal.tv_usec) / 1000000;
+  if(_previousFrameTime != 0)
+  {
+    double deltaT = currentTime - _previousFrameTime;
+    if(deltaT < 0)
+    {
+      LOGW("Negative delta t: %g -- midnight rollover?", deltaT);
+      _previousFrameTime = currentTime;
+      return; 
+    }
+    if(deltaT > 0.1)
+      deltaT = 0.1;
+
+    // update all objects
+    [ch update: deltaT];
+  }
+  _previousFrameTime = currentTime;
+
+}
+
 /**
  * Tear down the EGL context currently associated with the display.
  */
@@ -212,6 +253,8 @@ struct saved_state {
     page = nil;
     [logo release];
     logo = nil;
+    [ch release];
+    ch = nil;
 
     if (self->display != EGL_NO_DISPLAY) {
         eglMakeCurrent(self->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
@@ -380,6 +423,8 @@ void android_main(struct android_app* app) {
             // Drawing is throttled to the screen update rate, so there
             // is no need to do timing here.
             [engine drawFrame];
+
+            [engine update];
         }
     }
 }

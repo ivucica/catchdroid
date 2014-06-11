@@ -10,3 +10,5 @@ gen/*
 *.apk
 *.class
 libpng-android/*
+assets_src/*
+INSTALL.sh
