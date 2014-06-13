@@ -11,6 +11,7 @@
 
   int _tiles[PAGE_WIDTH*PAGE_HEIGHT];
   GLfloat _textureCoordinates[2 * 6 * PAGE_WIDTH * PAGE_HEIGHT];
+  NSDictionary * _actions;
 }
 @property (nonatomic, retain) Texture * tileset;
 - (id) initWithPageX: (int)pageX 
@@ -18,5 +19,6 @@
 - (BOOL) loadFromFile: (NSString*) path;
 - (void) draw;
 - (BOOL) isTileTypePassable: (int) tileType;
-- (BOOL) isTilePassableAtX: (int)x y: (int) y;
+- (BOOL) isTilePassableAtX: (int)x y: (int)y;
+- (NSDictionary*) actionForX: (int)x y: (int)y;
 @end

@@ -10,6 +10,8 @@
   Character * _player;
 
   SEL _direction;
+
+  float _fadeProgress;
 }
 @property (retain) NSMutableDictionary * pages;
 @property (assign, nonatomic) int playerX;

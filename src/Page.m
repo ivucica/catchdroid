@@ -72,11 +72,18 @@ static BOOL tileTypePassable[] = {
       return nil;
     }
   }
+  
+  success = [self loadActionsFromFile: [NSString stringWithFormat: @"pages/%d-%d.actions", pageX, pageY]];
+  if (!success)
+  {
+    // ignore
+  }
 
   return self;
 }
 - (void) dealloc
 {
+  [_actions release];
   [_tileset release];
   [super dealloc];
 }
@@ -132,6 +139,31 @@ static BOOL tileTypePassable[] = {
   [self setTileset: [Texture textureWithPath: @"tiles1.png"]]; 
   return YES;
 }
+- (BOOL) loadActionsFromFile: (NSString *)path
+{
+  Asset * asset = [Asset assetWithPath: path];
+  if (!asset)
+  {
+    return NO;
+  }
+
+  return [self loadActionsFromString: [asset string]];
+}
+- (BOOL) loadActionsFromString: (NSString *)source
+{
+  NSData* plistData = [source dataUsingEncoding:NSUTF8StringEncoding];
+  NSString *error = nil;
+  NSPropertyListFormat format = 0;
+  NSDictionary* plist = [NSPropertyListSerialization propertyListFromData:plistData mutabilityOption:NSPropertyListImmutable format:&format errorDescription:&error];
+  NSLog(@"Loading actions from %@: %@", source, plist);
+  if (error)
+  {
+    NSLog(@"Error loading actions: %@", error);
+    return NO;
+  }
+  _actions = [plist retain];
+  return YES;
+}
 - (void) draw
 {
   glEnable(GL_TEXTURE_2D);
@@ -156,9 +188,14 @@ static BOOL tileTypePassable[] = {
 
   return tileTypePassable[tileType];
 }
-- (BOOL) isTilePassableAtX: (int)x y: (int) y
+- (BOOL) isTilePassableAtX: (int)x y: (int)y
 {
-  LOGI("isTilePassableAtX: %d y: %d -- tiletype is %d", x, y, _tiles[y*PAGE_WIDTH + x]);
   return [self isTileTypePassable: _tiles[y * PAGE_WIDTH + x]];
+}
+- (NSDictionary*) actionForX: (int)x y: (int)y
+{
+  NSString * actionKey = [NSString stringWithFormat: @"%d-%d", x, y];
+  NSDictionary * action = [_actions objectForKey: actionKey];
+  return action;
 }
 @end

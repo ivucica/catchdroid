@@ -115,11 +115,62 @@
   // others would have: [ch translateWithMultiplier: 1];
   // (to apply 'progress' animation)
   [_player draw];
+
+  if (_fadeProgress < 1)
+  {
+    glPushMatrix();
+    glDisable(GL_TEXTURE_2D);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    GLfloat colors[] = {
+      0, 0, 0, 1.-fabs(_fadeProgress),
+      0, 0, 0, 1.-fabs(_fadeProgress),
+      0, 0, 0, 1.-fabs(_fadeProgress),
+      0, 0, 0, 1.-fabs(_fadeProgress),
+      0, 0, 0, 1.-fabs(_fadeProgress),
+      0, 0, 0, 1.-fabs(_fadeProgress),
+    };
+    NSLog(@"%g", 1.-fabs(_fadeProgress));
+    GLfloat vertices[] = {
+      -0.5, -0.5,
+       0.5, -0.5,
+       0.5, 0.5,
+
+       0.5, 0.5,
+      -0.5, 0.5,
+      -0.5, -0.5,
+    };
+    glVertexPointer(2, GL_FLOAT, 0, vertices);
+    glColorPointer(4, GL_FLOAT, 0, colors);
+    glScalef(16,16,1);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glPopMatrix();
+  }
+
 }
 
 - (void) update: (double)dt
 {
+  GLfloat oldProgress = [_player progress];
   [_player update: dt];
+  if (oldProgress < 1 && [_player progress] > 1)
+  {
+    // just finished walking.
+    NSDictionary * action = [[self playerPage] actionForX: _playerX % PAGE_WIDTH y: _playerY % PAGE_HEIGHT]; 
+    if(action)
+    {
+      if([[action objectForKey: @"type"] isEqual: @"teleport"])
+      {
+        _fadeProgress = 0;
+        self.playerX = [[action objectForKey: @"destinationX"] intValue];
+        self.playerY = [[action objectForKey: @"destinationY"] intValue];
+      }
+    }
+  }
+  _fadeProgress += dt;
+
   if(_direction)
     [self performSelector: _direction];
 }

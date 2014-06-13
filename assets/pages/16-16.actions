@@ -1,0 +1,7 @@
+{
+  3-1 = {
+    type = "teleport";
+    destinationX = 127;
+    destinationY = 127;
+  };
+}
