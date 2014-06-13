@@ -16,6 +16,7 @@
 #import "Texture.h"
 #import "Page.h"
 #import "Character.h"
+#import "Scene.h"
 
 /**
  * Our saved state data.
@@ -48,9 +49,8 @@ struct saved_state {
 
     @private
     Texture * _controls;
-    Page * page;
-    Character * ch;
     double _previousFrameTime;
+    Scene * _scene;
 }
 -(int)setupDisplay;
 -(void)terminateDisplay;
@@ -134,12 +134,10 @@ struct saved_state {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    page = [[Page alloc] initWithPageX: 16 pageY: 16];
-
     _controls = [Texture textureWithPath: @"controls.png"];
     [_controls retain];
 
-    ch = [[Character alloc] initWithTexturePath: @"player.png"];
+    _scene = [Scene new];
 
     //[self showToast: @"Tap to begin"];
 
@@ -172,15 +170,8 @@ struct saved_state {
 
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
-    [ch translateWithMultiplier: -1];
-    [page draw];
+    [_scene draw];
     glPopMatrix();
-    glPushMatrix();
-    // for player character, not doing translation
-    // others would have: [ch translateWithMultiplier: 1];
-    [ch draw];
-    glPopMatrix();
-
     ////////////////////////
 
     glPushMatrix();    
@@ -243,7 +234,7 @@ struct saved_state {
       deltaT = 0.1;
 
     // update all objects
-    [ch update: deltaT];
+    [_scene update: deltaT];
   }
   _previousFrameTime = currentTime;
 
@@ -261,6 +252,8 @@ struct saved_state {
     _controls = nil;
     [ch release];
     ch = nil;
+    [_scene release];
+    _scene = nil;
 
     if (self->display != EGL_NO_DISPLAY) {
         eglMakeCurrent(self->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
@@ -293,8 +286,8 @@ struct saved_state {
         static const int MAXIMUM_TOUCHES = 2;
         switch(action)
         {
-          case AMOTION_EVENT_ACTION_POINTER_UP: 
-          case AMOTION_EVENT_ACTION_UP: 
+          case AMOTION_EVENT_ACTION_POINTER_DOWN:
+          case AMOTION_EVENT_ACTION_DOWN: 
           case AMOTION_EVENT_ACTION_MOVE: 
           { 
             int index = (action & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) 
@@ -307,14 +300,21 @@ struct saved_state {
 
             float pressure = AMotionEvent_getPressure(event, index); 
 
-
-            if(y < 0.10)
-              LOGI("LEFT");
-            else
-
+            if(x / (float)width < 0.10)
+              [_scene setDirection: @selector(movePlayerLeft)];
+            else if(x / (float)width > 0.26)
+              [_scene setDirection: @selector(movePlayerRight)];
+            else if(y / (float)height < 0.72)
+              [_scene setDirection: @selector(movePlayerUp)];
+            else if(y / (float)height > 0.85)
+              [_scene setDirection: @selector(movePlayerDown)];
             LOGI("Engine %g %g action %d", x / (float)width, y / (float)height, action);
             break;
           }
+          case AMOTION_EVENT_ACTION_POINTER_UP: 
+          case AMOTION_EVENT_ACTION_UP: 
+            [_scene setDirection: NULL];
+            break;
           default:
           LOGI("New action");
         }
@@ -387,6 +387,8 @@ struct saved_state {
   }
 
   (*env)->CallVoidMethod(env,toast,show);
+
+  (*env)->DeleteLocalRef(env, txt);
 
   (*vm)->DetachCurrentThread(vm);
 
@@ -461,8 +463,32 @@ void android_main(struct android_app* app) {
     // Make sure glue isn't stripped.
     app_dummy();
 
+    // Very low tech way to initialize the GNUStep multithreaded system
+    // TODOANDROID: isMainThread is false here we need to add a method to NSThread like GSSetThisThreadMainThread();
+    //NSThread* init = [[NSThread alloc] initWithTarget:nil selector:nil object:nil]; // cannot call before GSInitializeProcess()
+    //[init start];
+
+    // maybe we want AndroidCore_setMainThreadJNIEnv(env);
+
+    NSAutoreleasePool * arp = [NSAutoreleasePool new];
+
+    NSString * cmdline = [NSString stringWithContentsOfFile: [NSString stringWithFormat: @"/proc/%d/cmdline", getpid()]];
+    NSString * identifier = [[cmdline componentsSeparatedByString: @" "] objectAtIndex: 0];
+    NSString * home = [NSString stringWithFormat: @"/data/data/%@", identifier];
+    NSString * exe = [NSString stringWithFormat: @"%@/exe", home];
+    FILE * f = fopen([exe UTF8String], "w"); if(f) fclose(f);
+
+    NSString * path = [NSString stringWithFormat: @"PATH=%@", home];
+    NSString * home2 = [NSString stringWithFormat: @"HOME=%@", home];
+
+    const char* argv[1] = { [exe UTF8String] };
+    const char* env[4] = { "USER=android", [home UTF8String], [path UTF8String], NULL };
+    
+    GSInitializeProcess(1, argv, env);
+    //[[NSUserDefaults standardUserDefaults] readFromPath:userDefaultsPath()]; 
     LOGI("Preparing display");
     Engine * engine = [Engine new];
+    [arp release];
     app->userData = engine;
     app->onAppCmd = engine_handle_cmd;
     app->onInputEvent = engine_handle_input;
@@ -490,6 +516,7 @@ void android_main(struct android_app* app) {
         int events;
         struct android_poll_source* source;
 
+        NSAutoreleasePool * arp = [NSAutoreleasePool new];
         // If not animating, we will block forever waiting for events.
         // If animating, we loop until all events are read, then continue
         // to draw the next frame of animation.
@@ -534,5 +561,6 @@ void android_main(struct android_app* app) {
 
             [engine update];
         }
+        [arp release];
     }
 }

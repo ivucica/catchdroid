@@ -13,6 +13,7 @@ public class IVNativeActivity extends NativeActivity
     File privateStorageDir = applicationContext.getFilesDir();
     String libPath = privateStorageDir.getAbsolutePath();
     */
+    System.loadLibrary("log");
     System.loadLibrary("objc");
     System.loadLibrary("gnustep-base");
     System.loadLibrary("CatchDroid");

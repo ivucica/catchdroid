@@ -103,13 +103,13 @@ static const GLfloat vertices[] = {
       glTranslatef(0, -(1.0 - progress) * multiplier, 0);
       break;
       case 1: // face right
-      glTranslatef((1.0 - progress) * multiplier, 0, 0);
+      glTranslatef(-(1.0 - progress) * multiplier, 0, 0);
       break;
       case 2: // face down
       glTranslatef(0, (1.0 - progress) * multiplier, 0);
       break;
       case 3: // face left
-      glTranslatef(-(1.0 - progress) * multiplier, 0, 0);
+      glTranslatef((1.0 - progress) * multiplier, 0, 0);
       break;
     }
   }

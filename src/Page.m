@@ -3,7 +3,6 @@
 #import "Asset.h"
 
 #include <android/log.h>
-
 #define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "native-activity", __VA_ARGS__))
 #define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, "native-activity", __VA_ARGS__))
 
@@ -58,14 +57,15 @@ static GLfloat gridVertices[(2) * // x,y
   BOOL success = [self loadFromFile: [NSString stringWithFormat: @"pages/%d-%d", pageX, pageY]];
   if (!success)
   {
-    [self release];
-    return nil;
+    NSString * repeatingTile = @"63 ";
+    NSString * map = [@"" stringByPaddingToLength:PAGE_WIDTH*PAGE_HEIGHT * [repeatingTile length] withString: repeatingTile startingAtIndex: 0];
+    success = [self loadFromString: map];
+    if (!success)
+    {
+      [self release];
+      return nil;
+    }
   }
-  LOGI("%g %g - %g %g - %g %g - %g %g", 
-      gridVertices[0], gridVertices[1],
-      gridVertices[2], gridVertices[3],
-      gridVertices[4], gridVertices[5],
-      gridVertices[6], gridVertices[7]);
 
   return self;
 }
@@ -77,7 +77,6 @@ static GLfloat gridVertices[(2) * // x,y
 
 - (BOOL) loadFromFile: (NSString*) path
 {
-
   Asset * asset = [Asset assetWithPath: path];
   if (!asset)
   {
@@ -86,6 +85,10 @@ static GLfloat gridVertices[(2) * // x,y
   }
 
   NSString * s = [[asset string] stringByReplacingOccurrencesOfString: @"\n" withString: @" "];
+  return [self loadFromString: s];
+}
+- (BOOL) loadFromString: (NSString*) s
+{
   NSArray * tiles = [s componentsSeparatedByString: @" "];
   int i = 0;
   for(NSString * tile in tiles)
@@ -115,8 +118,6 @@ static GLfloat gridVertices[(2) * // x,y
               (2 * k + 1);
       _textureCoordinates[a] = (_tiles[i] % (TILESET_WIDTH) + textures[2*k + 0]) / ((GLfloat)TILESET_WIDTH);
       _textureCoordinates[b] = (_tiles[i] / (TILESET_WIDTH) + textures[2*k + 1]) / ((GLfloat)TILESET_HEIGHT); 
-
-      LOGI("%d,%d - vertex %d: into %d,%d go %g,%g", x, y, k, a, b, _textureCoordinates[a], _textureCoordinates[b]);
     }
 
     i++;
