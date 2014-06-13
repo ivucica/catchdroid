@@ -89,6 +89,11 @@
   int playerPageY = _playerY / PAGE_HEIGHT;
 
   glPushMatrix();
+  glScalef(0.8, 0.8, 1);
+  glTranslatef(0, 2, 0);
+
+  glPushMatrix();
+
   [_player translateWithMultiplier: -1];
   glTranslatef(-(_playerX % PAGE_WIDTH),
                (_playerY % PAGE_HEIGHT),
@@ -115,6 +120,8 @@
   // others would have: [ch translateWithMultiplier: 1];
   // (to apply 'progress' animation)
   [_player draw];
+  
+  glPopMatrix();
 
   if (_fadeProgress < 1)
   {
