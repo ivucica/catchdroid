@@ -14,6 +14,12 @@ static GLfloat gridVertices[(2) * // x,y
                             PAGE_WIDTH * PAGE_HEIGHT
                            ];
 
+static BOOL tileTypePassable[] = {
+  YES, YES, YES, NO,  NO,  NO,  NO,  NO,
+  NO,  NO,  NO,  NO,  NO,  NO,  NO,  NO,
+  NO,  NO,  YES,  NO,  NO,  NO,  NO,  NO
+};
+
 @implementation Page
 @synthesize tileset=_tileset;
 
@@ -128,18 +134,31 @@ static GLfloat gridVertices[(2) * // x,y
 }
 - (void) draw
 {
-    glEnable(GL_TEXTURE_2D);
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+  glEnable(GL_TEXTURE_2D);
+  glEnableClientState(GL_VERTEX_ARRAY);
+  glEnableClientState(GL_TEXTURE_COORD_ARRAY);
   
-    glBindTexture(GL_TEXTURE_2D, [_tileset textureId]);
-    glVertexPointer(2, GL_FLOAT, 0, gridVertices);
-    glTexCoordPointer(2, GL_FLOAT, 0, _textureCoordinates);
-    glDrawArrays(GL_TRIANGLES, 0, 6 * (PAGE_WIDTH * PAGE_HEIGHT));
-    glBindTexture(GL_TEXTURE_2D, 0);
+  glBindTexture(GL_TEXTURE_2D, [_tileset textureId]);
+  glVertexPointer(2, GL_FLOAT, 0, gridVertices);
+  glTexCoordPointer(2, GL_FLOAT, 0, _textureCoordinates);
+  glDrawArrays(GL_TRIANGLES, 0, 6 * (PAGE_WIDTH * PAGE_HEIGHT));
+  glBindTexture(GL_TEXTURE_2D, 0);
     
-    glDisableClientState(GL_VERTEX_ARRAY);
-    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-    glDisable(GL_TEXTURE_2D);
+  glDisableClientState(GL_VERTEX_ARRAY);
+  glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+  glDisable(GL_TEXTURE_2D);
+}
+
+- (BOOL) isTileTypePassable: (int) tileType
+{
+  if(!(tileType < sizeof(tileTypePassable) / sizeof(tileTypePassable[0])))
+    return NO;
+
+  return tileTypePassable[tileType];
+}
+- (BOOL) isTilePassableAtX: (int)x y: (int) y
+{
+  LOGI("isTilePassableAtX: %d y: %d -- tiletype is %d", x, y, _tiles[y*PAGE_WIDTH + x]);
+  return [self isTileTypePassable: _tiles[y * PAGE_WIDTH + x]];
 }
 @end

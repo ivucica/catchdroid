@@ -246,12 +246,8 @@ struct saved_state {
 -(void)terminateDisplay
 {
     LOGI("Terminating display");
-    [page release];
-    page = nil;
     [_controls release];
     _controls = nil;
-    [ch release];
-    ch = nil;
     [_scene release];
     _scene = nil;
 

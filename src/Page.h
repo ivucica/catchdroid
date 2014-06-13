@@ -17,4 +17,6 @@
                pageY: (int)pageY;
 - (BOOL) loadFromFile: (NSString*) path;
 - (void) draw;
+- (BOOL) isTileTypePassable: (int) tileType;
+- (BOOL) isTilePassableAtX: (int)x y: (int) y;
 @end
