@@ -1,6 +1,8 @@
 #import "Page.h"
 #import "Texture.h"
 #import "Asset.h"
+#import "Character.h"
+#import "Engine.h"
 
 #include <android/log.h>
 #define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "native-activity", __VA_ARGS__))
@@ -22,7 +24,6 @@ static BOOL tileTypePassable[] = {
 
 @implementation Page
 @synthesize tileset=_tileset;
-
 + (void) load
 {
   [super load];
@@ -79,10 +80,18 @@ static BOOL tileTypePassable[] = {
     // ignore
   }
 
+  _characters = [NSMutableArray new];
+  success = [self loadCharactersFromFile: [NSString stringWithFormat: @"pages/%d-%d.characters", pageX, pageY]];
+  if (!success)
+  {
+    // ignore
+  } 
+
   return self;
 }
 - (void) dealloc
 {
+  [_characters release];
   [_actions release];
   [_tileset release];
   [super dealloc];
@@ -154,7 +163,10 @@ static BOOL tileTypePassable[] = {
   NSData* plistData = [source dataUsingEncoding:NSUTF8StringEncoding];
   NSString *error = nil;
   NSPropertyListFormat format = 0;
-  NSDictionary* plist = [NSPropertyListSerialization propertyListFromData:plistData mutabilityOption:NSPropertyListImmutable format:&format errorDescription:&error];
+  NSDictionary* plist = [NSPropertyListSerialization propertyListFromData: plistData
+                                                         mutabilityOption: NSPropertyListImmutable
+                                                                   format: &format
+                                                         errorDescription: &error];
   NSLog(@"Loading actions from %@: %@", source, plist);
   if (error)
   {
@@ -164,6 +176,50 @@ static BOOL tileTypePassable[] = {
   _actions = [plist retain];
   return YES;
 }
+
+- (BOOL) loadCharactersFromFile: (NSString *)path
+{
+  Asset * asset = [Asset assetWithPath: path];
+  if (!asset)
+  {
+    return NO;
+  }
+
+  return [self loadCharactersFromString: [asset string]];
+}
+- (BOOL) loadCharactersFromString: (NSString *)source
+{
+  NSData* plistData = [source dataUsingEncoding:NSUTF8StringEncoding];
+  NSString *error = nil;
+  NSPropertyListFormat format = 0;
+  NSArray* plist = [NSPropertyListSerialization propertyListFromData: plistData
+                                                    mutabilityOption: NSPropertyListImmutable
+                                                              format: &format
+                                                    errorDescription: &error];
+  NSLog(@"Loading characters from %@: %@", source, plist);
+  if (error)
+  {
+    NSLog(@"Error loading actions: %@", error);
+    return NO;
+  }
+
+  for(NSDictionary * dict in plist)
+  {
+    Class cls = NSClassFromString([dict objectForKey: @"class"]);
+    NSLog(@" (%@)", cls);
+    id chr = [[cls alloc] initWithTexturePath: [dict objectForKey: @"texturePath"]];
+    for(NSString * key in [dict allKeys])
+    {
+      if([key isEqual: @"class"]) continue;
+      if([key isEqual: @"texturePath"]) continue;
+      id val = [dict objectForKey: key];
+      [chr setValue: val forKey: key];
+      [_characters addObject: chr];
+    }
+  }
+  return YES;
+}
+
 - (void) draw
 {
   glEnable(GL_TEXTURE_2D);
@@ -179,6 +235,23 @@ static BOOL tileTypePassable[] = {
   glDisableClientState(GL_VERTEX_ARRAY);
   glDisableClientState(GL_TEXTURE_COORD_ARRAY);
   glDisable(GL_TEXTURE_2D);
+
+  for(id chr in _characters)
+  {
+    glPushMatrix();
+    glTranslatef([chr mapX] % PAGE_WIDTH,
+                 PAGE_HEIGHT - [chr mapY] % PAGE_HEIGHT - 1,
+                 0);
+    [chr draw];
+    glPopMatrix();
+  }
+}
+- (void) update: (float)dt
+{
+  for(id chr in _characters)
+  {
+    [chr update: dt];
+  }
 }
 
 - (BOOL) isTileTypePassable: (int) tileType
@@ -190,7 +263,19 @@ static BOOL tileTypePassable[] = {
 }
 - (BOOL) isTilePassableAtX: (int)x y: (int)y
 {
+  if([self characterAtMapX: x mapY: y])
+    return NO;
   return [self isTileTypePassable: _tiles[y * PAGE_WIDTH + x]];
+}
+- (id) characterAtMapX: (int)x mapY: (int)y
+{
+  for(id chr in _characters)
+  {
+    if([chr mapX] % PAGE_WIDTH == x % PAGE_WIDTH && 
+       [chr mapY] % PAGE_HEIGHT == y % PAGE_HEIGHT)
+      return chr;
+  }
+  return nil;
 }
 - (NSDictionary*) actionForX: (int)x y: (int)y
 {

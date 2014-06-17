@@ -1,6 +1,9 @@
 #import "Scene.h"
 #import "Page.h"
 #import "Character.h"
+#import "Font.h"
+#import "TextContainer.h"
+#import "NPC.h"
 
 #include <android/log.h>
 #define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "native-activity", __VA_ARGS__))
@@ -12,6 +15,9 @@
 @synthesize playerX=_playerX;
 @synthesize playerY=_playerY;
 @synthesize direction=_direction;
+@synthesize buttonA=_buttonA;
+@synthesize textContainer=_textContainer;
+
 - (id) init
 {
   self = [super init];
@@ -23,11 +29,21 @@
   self.playerX = 16*8 + 3;
   self.playerY = 16*8 + 4;
 
+  _font = [[Font alloc] initWithPath: @"font-hand-24x32.png"
+                           charWidth: 24
+                          charHeight: 32
+                         charsPerRow: 16];
+  _textContainer = [[TextContainer alloc] initWithFont: _font];
+  [_textContainer enqueueText: @"     Welcome to\n"
+                                " *** CATCHDROID ***"];
+
   return self;
 }
 
 - (void) dealloc
 {
+  [_font release];
+  [_textContainer release];
   [_player release];
   [_pages release];
   [super dealloc];
@@ -123,6 +139,12 @@
   
   glPopMatrix();
 
+  glPushMatrix();
+  glScalef(0.3, 0.3, 1.);
+  glTranslatef(-8, -1, 0);
+  [_textContainer draw];
+  glPopMatrix();
+
   if (_fadeProgress < 1)
   {
     glPushMatrix();
@@ -157,7 +179,7 @@
 
 }
 
-- (void) update: (double)dt
+- (void) update: (float)dt
 {
   GLfloat oldProgress = [_player progress];
   [_player update: dt];
@@ -175,6 +197,13 @@
       }
     }
   }
+
+  for(Page * pg in [_pages allValues])
+  {
+    [pg update: dt];
+  }
+  [_textContainer update: dt];
+
   _fadeProgress += dt;
 
   if(_direction)
@@ -209,6 +238,45 @@
       LOGI("Caching the page failed?!");
    }
    return page;
+}
+
+- (id) characterAtMapX: (int)x mapY: (int)y
+{
+   Page * page = [self pageForMapX: x mapY: y];
+   NSLog(@"Page %@; x y %d %d", page, x, y);
+   return [page characterAtMapX: x mapY: y];
+}
+- (void) buttonARises
+{
+  id chr = nil;
+  switch([_player direction])
+  {
+    case 0:
+      chr = [self characterAtMapX: _playerX mapY: _playerY-1];
+      break;
+    case 1:
+      chr = [self characterAtMapX: _playerX+1 mapY: _playerY];
+      break;
+    case 2:
+      chr = [self characterAtMapX: _playerX mapY: _playerY+1];
+      break;
+    case 3:
+      chr = [self characterAtMapX: _playerX-1 mapY: _playerY];
+      break;
+  }
+
+  [chr buttonARisesInScene: self
+           playerDirection: _player.direction];
+}
+- (void) setButtonA: (BOOL)buttonA
+{
+  if(buttonA && !_buttonA)
+  {
+    [self buttonARises];
+  }
+  _buttonA = buttonA;
+
+  [_textContainer setButtonA: buttonA];
 }
 @end
 

@@ -14,7 +14,7 @@
 @property (assign) int mapY;
 
 - (id) initWithTexturePath: (NSString *)texturePath;
-- (void) update: (double) dt;
+- (void) update: (float) dt;
 - (void) draw;
 - (void) translateWithMultiplier: (int)multiplier;
 @end

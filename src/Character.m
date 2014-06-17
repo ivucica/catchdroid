@@ -115,7 +115,7 @@ static const GLfloat vertices[] = {
   }
 }
 
-- (void) update: (double) dt
+- (void) update: (float) dt
 {
   if(_progress >= 1)
   {

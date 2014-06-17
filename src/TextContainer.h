@@ -11,6 +11,7 @@
   BOOL _buttonA;
 }
 @property (assign) BOOL buttonA;
+@property (readonly, nonatomic, assign, getter=isVisible) BOOL visible;
 - (id) initWithFont: (Font *)font;
 - (void) enqueueText: (NSString *)text;
 - (void) update: (float)dt;

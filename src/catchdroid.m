@@ -1,18 +1,12 @@
 #include <jni.h>
 #include <errno.h>
 
-#include <EGL/egl.h>
-#include <GLES/gl.h>
-
-#include <android/sensor.h>
 #include <android/log.h>
-#include "android_native_app_glue.h"
 
 #define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "native-activity", __VA_ARGS__))
 #define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, "native-activity", __VA_ARGS__))
 
-#include <Foundation/NSObject.h>
-
+#import "Engine.h"
 #import "Texture.h"
 #import "Page.h"
 #import "Character.h"
@@ -20,49 +14,14 @@
 #import "Font.h"
 #import "TextContainer.h"
 
-/**
- * Our saved state data.
- */
-struct saved_state {
-    float angle;
-    int32_t x;
-    int32_t y;
-};
-
-/**
- * Shared state for our app.
- */
-@interface Engine : NSObject
-{
-    @public
-    struct android_app* app;
-
-    ASensorManager* sensorManager;
-    const ASensor* accelerometerSensor;
-    ASensorEventQueue* sensorEventQueue;
-
-    int animating;
-    EGLDisplay display;
-    EGLSurface surface;
-    EGLContext context;
-    int32_t width;
-    int32_t height;
-    struct saved_state state;
-
-    @private
-    Texture * _controls;
-    double _previousFrameTime;
-    Scene * _scene;
-    Font * _font;
-    TextContainer * _textContainer;
-}
--(int)setupDisplay;
--(void)terminateDisplay;
--(void)drawFrame;
--(void)update;
-@end
+static Engine * currentEngine = nil;
 
 @implementation Engine
++ (Engine *) currentEngine
+{
+    return currentEngine;
+}
+
 /**
  * Initialize an EGL context for the current display.
  */
@@ -142,13 +101,6 @@ struct saved_state {
     [_controls retain];
 
     _scene = [Scene new];
-    _font = [[Font alloc] initWithPath: @"font-hand-24x32.png"
-                             charWidth: 24
-                            charHeight: 32
-                           charsPerRow: 16];
-    _textContainer = [[TextContainer alloc] initWithFont: _font];
-
-    [_textContainer enqueueText: @"hello\nworld"];
 
     //[self showToast: @"Tap to begin"];
 
@@ -222,13 +174,6 @@ struct saved_state {
     glPopMatrix();
     //////////////////
 
-    glPushMatrix();
-    glScalef(0.3, 0.3, 1.);
-    glTranslatef(-8, -1, 0);
-    //[_font drawText: @"hello();"];
-    [_textContainer draw];
-    glPopMatrix();
-
     eglSwapBuffers(self->display, self->surface);
 }
 
@@ -253,7 +198,6 @@ struct saved_state {
 
     // update all objects
     [_scene update: deltaT];
-    [_textContainer update: deltaT];
   }
   _previousFrameTime = currentTime;
 
@@ -320,20 +264,23 @@ struct saved_state {
             else if(x / (float)width > 0.26 && x / (float)width < 0.5)
               [_scene setDirection: @selector(movePlayerRight)];
             else if(x / (float)width >= 0.5 && x / (float)width < 0.75)
-              [_textContainer setButtonA: YES];
+              [_scene setButtonA: YES];
             else if(x / (float)width > 0.75)
               {}
             else if(y / (float)height < 0.72)
               [_scene setDirection: @selector(movePlayerUp)];
             else if(y / (float)height > 0.85)
               [_scene setDirection: @selector(movePlayerDown)];
+
+            if([_scene.textContainer isVisible])
+              [_scene setDirection: NULL];
             LOGI("Engine %g %g action %d", x / (float)width, y / (float)height, action);
             break;
           }
           case AMOTION_EVENT_ACTION_POINTER_UP: 
           case AMOTION_EVENT_ACTION_UP: 
             [_scene setDirection: NULL];
-            [_textContainer setButtonA: NO];
+            [_scene setButtonA: NO];
             break;
           default:
           LOGI("New action");
@@ -427,6 +374,11 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event) 
  */
 static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
     Engine * engine = (Engine *)app->userData;
+
+    Engine * oldCurrentEngine = [currentEngine retain];
+    currentEngine = [engine retain];
+    [oldCurrentEngine release];
+
     switch (cmd) {
         case APP_CMD_SAVE_STATE:
             LOGI("Saving state");
@@ -472,6 +424,9 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
             [engine drawFrame];
             break;
     }
+
+    [currentEngine release];
+    currentEngine = nil;
 }
 
 /**
@@ -563,7 +518,14 @@ void android_main(struct android_app* app) {
 
             // Check if we are exiting.
             if (app->destroyRequested != 0) {
+                Engine * oldCurrentEngine = [currentEngine retain];
+                currentEngine = [engine retain];
+                [oldCurrentEngine release];
+
                 [engine terminateDisplay];
+
+                [currentEngine release];
+                currentEngine = nil;
                 return;
             }
         }
@@ -577,9 +539,15 @@ void android_main(struct android_app* app) {
 
             // Drawing is throttled to the screen update rate, so there
             // is no need to do timing here.
-            [engine drawFrame];
+            Engine * oldCurrentEngine = [currentEngine retain];
+            currentEngine = [engine retain];
+            [oldCurrentEngine release];
 
+            [engine drawFrame];
             [engine update];
+
+            [currentEngine release];
+            currentEngine = nil;
         }
         [arp release];
     }

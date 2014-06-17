@@ -13,6 +13,11 @@ Third-party assets
 CC-BY 3.0 license from:
 <http://opengameart.org/content/hand-drawn-bitmap-font>
 
+Bugs
+----
+
+* Characters cannot cross page borders.
+* Characters cannot be communicated with across page borders.
 
 Windows
 -------

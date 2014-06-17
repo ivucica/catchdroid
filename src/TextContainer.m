@@ -30,6 +30,10 @@
 {
   [_queue addObjectsFromArray: [text componentsSeparatedByString: @"\n"]];
 }
+- (BOOL) isVisible
+{
+  return [_queue count];
+}
 - (void) update: (float)dt
 {
   if (![_queue count])
@@ -81,19 +85,36 @@
   glPopMatrix();
 
   glPushMatrix();
+  glScalef(0.7, 0.7, 1);
   glTranslatef(0.5, 0.5, 0);
   NSString * line1 = [_queue objectAtIndex: 0];
   line1 = [line1 substringToIndex: CD_MIN([line1 length], [line1 length] * _progress * 2)];
   [line1 drawWithCDFont: _font];
 
-  if(_progress > 0.5)
+  if(_progress > 0.5 && [_queue count] >= 2)
   {
     glTranslatef(0, -1, 0);
     NSString * line2 = [_queue objectAtIndex: 1];
     line2 = [line2 substringToIndex: CD_MIN([line2 length], [line2 length] * (_progress-0.5) * 2)];
     [line2 drawWithCDFont: _font];
   }
+  glPopMatrix();
 
+  glPushMatrix();
+  glTranslatef(0.5, 0.5, 0);
+  if(_progress > 1)
+  {
+    struct timeval currentTimeVal;
+    gettimeofday(&currentTimeVal, NULL);
+  
+    double currentTime = 0;
+    currentTime = currentTimeVal.tv_sec + ((double)currentTimeVal.tv_usec) / 1000000;
+    if(fmod(currentTime * 4, 2) < 1)
+    {
+      glTranslatef(12, -3, 0);
+      [@"*" drawWithCDFont: _font];
+    }
+  }
   glPopMatrix();
 }
 - (void) setButtonA: (BOOL)buttonA
@@ -106,7 +127,6 @@
 }
 - (void) buttonARises
 {
-  NSLog(@"Button A rises");
   if(![_queue count])
     return;
 
