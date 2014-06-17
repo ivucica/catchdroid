@@ -6,6 +6,8 @@ This is a small game for Android.
 It evolved from an exercise in building Android native activities with
 GNU Make.
 
+- <ivan+catchdroid@vucica.net>
+
 Third-party assets
 ------------------
 
@@ -17,7 +19,27 @@ Bugs
 ----
 
 * Characters cannot cross page borders.
-* Characters cannot be communicated with across page borders.
+
+Building
+--------
+
+Development platform was Linux.
+
+You need JDK and NDK. You should build GNUstep for Android:
+<http://bitbucket.org/ivucica/gnustep-android>
+
+As of June 17 2014, the above has not been fully updated to support, 
+e.g., `NSLog()` and maybe more. 
+
+To understand where to install relevant software, look at the `Makefile`.
+
+To skip building libobjc2 and GNUstep, you can take the relevant `.so`
+files from the built `.apk`, which will include the relevant patches.
+
+Other instructions can be read below.
+
+Experimental project's readme
+=============================
 
 Windows
 -------

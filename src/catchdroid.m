@@ -410,6 +410,7 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
                 ASensorEventQueue_setEventRate(engine->sensorEventQueue,
                         engine->accelerometerSensor, (1000L/60)*1000);
             }
+            engine->animating = 1;
             break;
         case APP_CMD_LOST_FOCUS:
             LOGI("Losing focus");
