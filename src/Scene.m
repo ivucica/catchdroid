@@ -137,7 +137,6 @@
       0, 0, 0, 1.-fabs(_fadeProgress),
       0, 0, 0, 1.-fabs(_fadeProgress),
     };
-    NSLog(@"%g", 1.-fabs(_fadeProgress));
     GLfloat vertices[] = {
       -0.5, -0.5,
        0.5, -0.5,

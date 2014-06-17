@@ -17,6 +17,8 @@
 #import "Page.h"
 #import "Character.h"
 #import "Scene.h"
+#import "Font.h"
+#import "TextContainer.h"
 
 /**
  * Our saved state data.
@@ -51,6 +53,8 @@ struct saved_state {
     Texture * _controls;
     double _previousFrameTime;
     Scene * _scene;
+    Font * _font;
+    TextContainer * _textContainer;
 }
 -(int)setupDisplay;
 -(void)terminateDisplay;
@@ -138,6 +142,13 @@ struct saved_state {
     [_controls retain];
 
     _scene = [Scene new];
+    _font = [[Font alloc] initWithPath: @"font-hand-24x32.png"
+                             charWidth: 24
+                            charHeight: 32
+                           charsPerRow: 16];
+    _textContainer = [[TextContainer alloc] initWithFont: _font];
+
+    [_textContainer enqueueText: @"hello\nworld"];
 
     //[self showToast: @"Tap to begin"];
 
@@ -211,6 +222,13 @@ struct saved_state {
     glPopMatrix();
     //////////////////
 
+    glPushMatrix();
+    glScalef(0.3, 0.3, 1.);
+    glTranslatef(-8, -1, 0);
+    //[_font drawText: @"hello();"];
+    [_textContainer draw];
+    glPopMatrix();
+
     eglSwapBuffers(self->display, self->surface);
 }
 
@@ -235,6 +253,7 @@ struct saved_state {
 
     // update all objects
     [_scene update: deltaT];
+    [_textContainer update: deltaT];
   }
   _previousFrameTime = currentTime;
 
@@ -478,7 +497,7 @@ void android_main(struct android_app* app) {
     NSString * home2 = [NSString stringWithFormat: @"HOME=%@", home];
 
     const char* argv[1] = { [exe UTF8String] };
-    const char* env[4] = { "USER=android", [home UTF8String], [path UTF8String], NULL };
+    const char* env[4] = { "USER=android", [home2 UTF8String], [path UTF8String], NULL };
     
     GSInitializeProcess(1, argv, env);
     //[[NSUserDefaults standardUserDefaults] readFromPath:userDefaultsPath()]; 

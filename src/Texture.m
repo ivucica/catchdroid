@@ -181,6 +181,8 @@ void release_raw_image_data(const RawImageData* data) {
 @synthesize asset=_asset;
 @synthesize path=_path;
 @synthesize textureId=_id;
+@synthesize textureWidth=_textureWidth;
+@synthesize textureHeight=_textureHeight;
 + (Texture *) textureWithPath: (NSString *)path
 {
   return [[[self alloc] initWithPath: path] autorelease];
@@ -237,6 +239,9 @@ void release_raw_image_data(const RawImageData* data) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexImage2D(
       GL_TEXTURE_2D, 0, rawData.gl_color_format, rawData.width, rawData.height, 0, rawData.gl_color_format, GL_UNSIGNED_BYTE, rawData.data);
+
+  _textureWidth = rawData.width;
+  _textureHeight = rawData.height;
 
   //glGenerateMipmap(GL_TEXTURE_2D); // only gles2.0
  

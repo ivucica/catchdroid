@@ -6,6 +6,14 @@ This is a small game for Android.
 It evolved from an exercise in building Android native activities with
 GNU Make.
 
+Third-party assets
+------------------
+
+'Hand-drawn bitmap font' by Nathan Korth has been taken under 
+CC-BY 3.0 license from:
+<http://opengameart.org/content/hand-drawn-bitmap-font>
+
+
 Windows
 -------
 
