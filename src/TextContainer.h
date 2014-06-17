@@ -8,7 +8,9 @@
   Font * _font;
   NSMutableArray * _queue;
   float _progress;
+  BOOL _buttonA;
 }
+@property (assign) BOOL buttonA;
 - (id) initWithFont: (Font *)font;
 - (void) enqueueText: (NSString *)text;
 - (void) update: (float)dt;

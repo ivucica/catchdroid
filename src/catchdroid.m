@@ -317,8 +317,12 @@ struct saved_state {
 
             if(x / (float)width < 0.10)
               [_scene setDirection: @selector(movePlayerLeft)];
-            else if(x / (float)width > 0.26)
+            else if(x / (float)width > 0.26 && x / (float)width < 0.5)
               [_scene setDirection: @selector(movePlayerRight)];
+            else if(x / (float)width >= 0.5 && x / (float)width < 0.75)
+              [_textContainer setButtonA: YES];
+            else if(x / (float)width > 0.75)
+              {}
             else if(y / (float)height < 0.72)
               [_scene setDirection: @selector(movePlayerUp)];
             else if(y / (float)height > 0.85)
@@ -329,6 +333,7 @@ struct saved_state {
           case AMOTION_EVENT_ACTION_POINTER_UP: 
           case AMOTION_EVENT_ACTION_UP: 
             [_scene setDirection: NULL];
+            [_textContainer setButtonA: NO];
             break;
           default:
           LOGI("New action");

@@ -4,8 +4,9 @@
 
 #define CD_MIN(x,y) ((x) < (y) ? (x) : (y))
 
-
 @implementation TextContainer
+@synthesize buttonA=_buttonA;
+
 - (id) initWithFont: (Font *)font
 {
   self = [super init];
@@ -33,6 +34,8 @@
 {
   if (![_queue count])
     return;
+  if(_buttonA)
+    dt *= 2;
   _progress += dt;
 }
 - (void) draw
@@ -92,5 +95,26 @@
   }
 
   glPopMatrix();
+}
+- (void) setButtonA: (BOOL)buttonA
+{
+  if(buttonA && !_buttonA)
+  {
+    [self buttonARises];
+  }
+  _buttonA = buttonA;
+}
+- (void) buttonARises
+{
+  NSLog(@"Button A rises");
+  if(![_queue count])
+    return;
+
+  if(_progress >= 1)
+  {
+    if([_queue count]) [_queue removeObjectAtIndex:0];
+    if([_queue count]) [_queue removeObjectAtIndex:0];
+    _progress = 0;
+  }
 }
 @end
